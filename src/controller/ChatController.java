@@ -5,6 +5,7 @@ import service.SellerAIService;
 import ui.BuyerPanel;
 import ui.SellerPanel;
 
+import javax.swing.Timer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -59,7 +60,23 @@ public class ChatController {
 
         // Display in buyer panel
         buyerPanel.displayBuyerMessage(message);
-        buyerPanel.displayWaitingMessage(request.getRequestLabel());
+
+        // Show 3 separate waiting bubbles with a small delay (simulating
+        // typing/processing)
+        Timer timer1 = new Timer(500,
+                e -> buyerPanel.displayWaitingMessage("seller data 1", request.getRequestId(), 1));
+        timer1.setRepeats(false);
+        timer1.start();
+
+        Timer timer2 = new Timer(1000,
+                e -> buyerPanel.displayWaitingMessage("seller data 2", request.getRequestId(), 2));
+        timer2.setRepeats(false);
+        timer2.start();
+
+        Timer timer3 = new Timer(1500,
+                e -> buyerPanel.displayWaitingMessage("seller data 3", request.getRequestId(), 3));
+        timer3.setRepeats(false);
+        timer3.start();
 
         // Add to seller dashboard
         sellerPanel.addRequest(request);
@@ -133,9 +150,12 @@ public class ChatController {
                 break;
         }
 
-        // Display the individual response in buyer chat
-        String responseMessage = formatIndividualResponse(formIndex, value);
-        buyerPanel.displaySellerResponse(responseMessage);
+        // Display the individual response in buyer chat by replacing the waiting bubble
+        // String responseMessage = formatIndividualResponse(formIndex, value);
+        // buyerPanel.displaySellerResponse(responseMessage);
+
+        // Use new method to replace the specific waiting bubble
+        buyerPanel.replaceSpecificWaitingBubble(requestId, formIndex, value);
 
         // Check if all forms are filled
         if (request.isFullyResponded()) {

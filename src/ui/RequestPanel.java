@@ -22,9 +22,9 @@ public class RequestPanel extends JPanel {
 
     private JLabel requestLabel;
     private JLabel buyerMessageLabel;
-    private JTextField form1Field;
-    private JTextField form2Field;
-    private JTextField form3Field;
+    private JTextArea form1Field;
+    private JTextArea form2Field;
+    private JTextArea form3Field;
 
     public RequestPanel(ChatRequest request, ChatController controller) {
         this.request = request;
@@ -40,8 +40,8 @@ public class RequestPanel extends JPanel {
                 BorderFactory.createEmptyBorder(15, 15, 15, 15)));
 
         // Set preferred and minimum size to ensure visibility
-        setPreferredSize(new Dimension(450, 220));
-        setMinimumSize(new Dimension(400, 220));
+        setPreferredSize(new Dimension(450, 320));
+        setMinimumSize(new Dimension(400, 320));
 
         // Request label (e.g., "REQ-1")
         JPanel labelPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
@@ -87,8 +87,8 @@ public class RequestPanel extends JPanel {
     private JPanel createFormRow(String label, int formIndex) {
         JPanel rowPanel = new JPanel(new BorderLayout(10, 0));
         rowPanel.setBackground(Color.WHITE);
-        rowPanel.setPreferredSize(new Dimension(420, 36));
-        rowPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        rowPanel.setPreferredSize(new Dimension(420, 80));
+        rowPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
 
         // Form label
         JLabel formLabel = new JLabel(label);
@@ -97,36 +97,40 @@ public class RequestPanel extends JPanel {
         formLabel.setForeground(new Color(150, 150, 150));
         rowPanel.add(formLabel, BorderLayout.WEST);
 
-        // Text field
-        JTextField textField = new JTextField();
-        textField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        textField.setBackground(new Color(245, 255, 245)); // Very light green
-        textField.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(230, 240, 230), 1, true),
-                BorderFactory.createEmptyBorder(6, 12, 6, 12)));
+        // Text field (Changed to JTextArea for multiline support)
+        JTextArea textArea = new JTextArea();
+        textArea.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        textArea.setBackground(new Color(245, 255, 245)); // Very light green
+        textArea.setLineWrap(true);
+        textArea.setWrapStyleWord(true);
+        textArea.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(230, 240, 230), 1, true));
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 
         // Store reference to field
         switch (formIndex) {
             case 1:
-                form1Field = textField;
+                form1Field = textArea;
                 if (request.getProductExplanation() != null) {
                     form1Field.setText(request.getProductExplanation());
                 }
                 break;
             case 2:
-                form2Field = textField;
+                form2Field = textArea;
                 if (request.getPriceEstimation() != null) {
                     form2Field.setText(request.getPriceEstimation());
                 }
                 break;
             case 3:
-                form3Field = textField;
+                form3Field = textArea;
                 if (request.getStockAvailability() != null) {
                     form3Field.setText(request.getStockAvailability());
                 }
                 break;
         }
-        rowPanel.add(textField, BorderLayout.CENTER);
+        rowPanel.add(scrollPane, BorderLayout.CENTER);
 
         // Buttons container
         JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));

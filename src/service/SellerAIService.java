@@ -1,15 +1,29 @@
 package service;
 
+import model.Product;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * SellerAIService - AI-powered assistant for sellers
  * 
  * ARCHITECTURE: Service Layer (separated from UI)
  * PURPOSE: Generate intelligent seller responses based on buyer messages
  * 
- * CURRENT IMPLEMENTATION: Mock/Rule-based AI with 3 simple rules
- * FUTURE: Can be replaced with OpenAI API, local LLM, or other AI backends
+ * UPDATED: E-commerce simulation (Catalog, Stock, Price, Discount)
  */
 public class SellerAIService {
+
+    // In-memory catalog
+    private List<Product> catalog;
+
+    // Track pending orders for stock deduction: RequestID -> PendingOrder
+    private Map<Integer, PendingOrder> pendingOrders;
 
     /**
      * Response types matching the 3 seller form fields
@@ -18,6 +32,29 @@ public class SellerAIService {
         PRODUCT_EXPLANATION,
         PRICE_ESTIMATION,
         STOCK_AVAILABILITY
+    }
+
+    // Internal helper class to track context
+    private class PendingOrder {
+        Product product;
+        int quantity;
+
+        PendingOrder(Product product, int quantity) {
+            this.product = product;
+            this.quantity = quantity;
+        }
+    }
+
+    public SellerAIService() {
+        this.catalog = new ArrayList<>();
+        this.pendingOrders = new HashMap<>();
+        initializeCatalog();
+    }
+
+    private void initializeCatalog() {
+        catalog.add(new Product("Laptop", 500.0, 10));
+        catalog.add(new Product("Phone", 300.0, 15));
+        catalog.add(new Product("Headset", 50.0, 20));
     }
 
     /**
@@ -35,15 +72,22 @@ public class SellerAIService {
 
         String message = buyerMessage.toLowerCase().trim();
 
+        // Check for confirmation first (shared logic across types, but usually fits
+        // best in Stock or Price)
+        // For simplicity, if it's a confirmation, we'll return a confirmation message
+        // regardless of type requested,
+        // or specifically in STOCK_AVAILABILITY as that implies "reserve it".
+        // Let's handle it inside specific generators for now.
+
         switch (responseType) {
             case PRODUCT_EXPLANATION:
                 return generateProductExplanation(message);
 
             case PRICE_ESTIMATION:
-                return generatePriceEstimation(message);
+                return generatePriceEstimation(message, requestId);
 
             case STOCK_AVAILABILITY:
-                return generateStockAvailability(message);
+                return generateStockAvailability(message, requestId);
 
             default:
                 return "";
@@ -51,12 +95,44 @@ public class SellerAIService {
     }
 
     /**
-     * RULE 1: Product Explanation Generator
-     * Analyzes buyer message and suggests product details
-     * 
-     * TODO: Replace with real AI API call
-     * Example: OpenAI GPT, Google Gemini, local Ollama model
+     * Helper: Detect product from message
      */
+    private Product detectProduct(String message) {
+        for (Product p : catalog) {
+            // Simple containment check
+            if (message.contains(p.getName().toLowerCase())) {
+                return p;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Helper: Extract quantity from message using Regex
+     * Default: 1
+     */
+    private int extractQuantity(String message) {
+        // Regex to find digits
+        Pattern pattern = Pattern.compile("\\d+");
+        Matcher matcher = pattern.matcher(message);
+
+        if (matcher.find()) {
+            try {
+                return Integer.parseInt(matcher.group());
+            } catch (NumberFormatException e) {
+                return 1;
+            }
+        }
+        return 1; // Default
+    }
+
+    /**
+     * Helper: Format currency
+     */
+    private String formatCurrency(double amount) {
+        return String.format("$%.2f", amount);
+    }
+
     private String generateProductExplanation(String message) {
         // Rule-based logic - keyword matching
         if (message.contains("padang") || message.contains("rice")) {
@@ -81,49 +157,81 @@ public class SellerAIService {
     /**
      * RULE 2: Price Estimation Generator
      * Suggests pricing based on buyer inquiry
-     * 
-     * TODO: Replace with real AI API call or database lookup
      */
-    private String generatePriceEstimation(String message) {
-        // Rule-based logic - keyword matching
-        if (message.contains("padang") || message.contains("rice")) {
-            return "Starts from Rp 25,000 for a complete set with Rendang. Very affordable!";
-        } else if (message.contains("drink") || message.contains("juice")) {
-            return "Just Rp 10,000 - Rp 15,000 per cup. Fresh and cold!";
-        } else if (message.contains("cheap") || message.contains("budget")) {
-            return "Our cheapest food is the 'Ekonomis Box' at only Rp 15,000.";
-        } else if (message.contains("laptop") || message.contains("computer")) {
-            return "$899 - $1,299 depending on configuration. Special discount available for bulk orders!";
-        } else if (message.contains("phone") || message.contains("smartphone")) {
-            return "$599 - $799. We have a promotion this week: 10% off!";
-        } else if (message.contains("headphone") || message.contains("earphone")) {
-            return "$149 - $249. Premium models include carrying case.";
-        } else if (message.contains("price") || message.contains("cost") || message.contains("how much")) {
-            return "Prices range from Rp 10,000 to Rp 150,000 depending on the package.";
-        } else {
-            return "Competitive pricing with best value guarantee. Please specify the product for exact pricing.";
+    private String generatePriceEstimation(String message, int requestId) {
+        Product p = detectProduct(message);
+
+        if (p != null) {
+            int qty = extractQuantity(message);
+
+            // Stock Check (Soft)
+            if (qty > p.getStock()) {
+                return "Sorry, we only have " + p.getStock() + " " + p.getName() + "(s) left in stock.";
+            }
+
+            // Calculate Total
+            double unitPrice = p.getPrice();
+            double subtotal = unitPrice * qty;
+            double discount = 0;
+            double total = subtotal;
+
+            // Bulk Discount (> 5 items)
+            if (qty >= 5) {
+                discount = subtotal * 0.10; // 10%
+                total = subtotal - discount;
+            }
+
+            // Store context for potential order
+            pendingOrders.put(requestId, new PendingOrder(p, qty));
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("You ordered: ").append(qty).append(" ").append(p.getName()).append("(s)\n");
+            sb.append("Unit price: ").append(formatCurrency(unitPrice)).append("\n");
+            sb.append("Subtotal: ").append(formatCurrency(subtotal)).append("\n");
+
+            if (discount > 0) {
+                sb.append("Bulk discount applied: 10% (-").append(formatCurrency(discount)).append(")\n");
+            }
+            sb.append("Final total: ").append(formatCurrency(total));
+            return sb.toString();
         }
+
+        // Fallback for unknown products
+        return "Please specify a product from our catalog: Laptop ($500), Phone ($300), Headset ($50).";
     }
 
     /**
      * RULE 3: Stock Availability Generator
-     * Provides stock status information
-     * 
-     * TODO: Replace with real inventory system integration
+     * Provides stock status information & Handles Confirmation
      */
-    private String generateStockAvailability(String message) {
-        // Rule-based logic - keyword matching
-        if (message.contains("padang") || message.contains("rice") || message.contains("food")) {
-            return "Freshly prepared and ready for delivery/pickup!";
-        } else if (message.contains("available") || message.contains("stock") || message.contains("in stock")) {
-            return "Yes, currently in stock! We can ship within 24 hours.";
-        } else if (message.contains("urgent") || message.contains("asap") || message.contains("quickly")) {
-            return "In stock and ready for immediate shipment. Express delivery available!";
-        } else if (message.contains("color") || message.contains("variant") || message.contains("flavor")) {
-            return "Available in many flavors/variants! All items are ready.";
-        } else {
-            return "Currently available. Fast shipping options ready!";
+    private String generateStockAvailability(String message, int requestId) {
+        // FEATURE 5: Deduct Stock After Confirmation
+        if (message.contains("yes") || message.contains("confirm") || message.contains("ok")) {
+            if (pendingOrders.containsKey(requestId)) {
+                PendingOrder order = pendingOrders.get(requestId);
+
+                // Double check stock
+                if (order.quantity > order.product.getStock()) {
+                    return "Sorry, stock has changed. Only " + order.product.getStock() + " available now.";
+                }
+
+                // Deduct
+                order.product.deductStock(order.quantity);
+                pendingOrders.remove(requestId); // Clear pending
+                return "Confirmed! " + order.quantity + " " + order.product.getName()
+                        + "(s) reserved. Remaining stock: " + order.product.getStock();
+            } else {
+                return "Please request a price quote first before confirming.";
+            }
         }
+
+        // Standard Stock Check
+        Product p = detectProduct(message);
+        if (p != null) {
+            return "We have " + p.getStock() + " " + p.getName() + "(s) currently in stock. Ready to ship!";
+        }
+
+        return "All our electronics are in limited stock. Please ask about a specific item.";
     }
 
     /**
