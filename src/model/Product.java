@@ -1,5 +1,4 @@
 package model;
-
 /**
  * Product Model - Represents an item in the catalog
  */

@@ -51,9 +51,9 @@ public class SellerAIService {
     }
 
     private void initializeCatalog() {
-        catalog.add(new Product("Laptop", 500.0, 10));
-        catalog.add(new Product("Phone", 300.0, 15));
-        catalog.add(new Product("Headset", 50.0, 20));
+        catalog.add(new Product("Nasi Padang", 500.0, 10));
+        catalog.add(new Product("Burger", 300.0, 15));
+        catalog.add(new Product("Mango juice", 50.0, 20));
     }
 
     /**
@@ -140,16 +140,10 @@ public class SellerAIService {
             return "Refreshing beverages available in many flavors: Mango, Avocado, Orange, and Iced Lemon Tea. Perfect for any meal!";
         } else if (message.contains("cheap") || message.contains("price") || message.contains("affordable")) {
             return "We have budget-friendly meal boxes starting from just Rp 15,000. Quality food at the best prices!";
-        } else if (message.contains("laptop") || message.contains("computer")) {
-            return "This is a high-performance laptop with Intel Core i7 processor, 16GB RAM, and 512GB SSD. Perfect for work and gaming.";
-        } else if (message.contains("phone") || message.contains("smartphone")) {
-            return "Latest smartphone model with 6.5\" AMOLED display, 128GB storage, and advanced camera system.";
-        } else if (message.contains("headphone") || message.contains("earphone")) {
-            return "Premium wireless headphones with active noise cancellation and 30-hour battery life.";
         } else if (message.contains("what") || message.contains("detail") || message.contains("info")) {
             return "This product features premium quality materials and comes with 1-year warranty. Let me know which specific product you're interested in!";
         } else {
-            return "Thank you for your inquiry! This is a quality product from our catalog. Could you specify which item you'd like to know more about?";
+            return "Sop Buah, 10k";
         }
     }
 
@@ -196,7 +190,7 @@ public class SellerAIService {
         }
 
         // Fallback for unknown products
-        return "Please specify a product from our catalog: Laptop ($500), Phone ($300), Headset ($50).";
+        return "Nasi Padang, 15k.";
     }
 
     /**
@@ -220,7 +214,7 @@ public class SellerAIService {
                 return "Confirmed! " + order.quantity + " " + order.product.getName()
                         + "(s) reserved. Remaining stock: " + order.product.getStock();
             } else {
-                return "Please request a price quote first before confirming.";
+                return "Nasi Goreng, 15k.";
             }
         }
 
@@ -230,7 +224,7 @@ public class SellerAIService {
             return "We have " + p.getStock() + " " + p.getName() + "(s) currently in stock. Ready to ship!";
         }
 
-        return "All our electronics are in limited stock. Please ask about a specific item.";
+        return "Orange Juice, 15k.";
     }
 
     /**
