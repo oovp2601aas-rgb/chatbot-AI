@@ -1,11 +1,10 @@
 package main;
 
 import controller.ChatController;
+import java.awt.*;
+import javax.swing.*;
 import ui.BuyerPanel;
 import ui.SellerPanel;
-
-import javax.swing.*;
-import java.awt.*;
 
 /**
  * Main Application - Entry point for the multi-session chat application

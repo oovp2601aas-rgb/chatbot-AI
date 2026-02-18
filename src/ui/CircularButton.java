@@ -1,10 +1,10 @@
 package ui;
 
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
+import javax.swing.*;
 
 /**
  * CircularButton - Custom circular button component
@@ -74,7 +74,7 @@ public class CircularButton extends JButton {
             int[] yPoints = { padding, padding + (size / 2), padding + size };
 
             g2.fillPolygon(xPoints, yPoints, 3);
-        } else if (text.equals("✨")) {
+        } else if (text.equals("AI")) {
             // Special handling for sparkle if needed, or just draw text
             FontMetrics fm = g2.getFontMetrics();
             int x = (diameter - fm.stringWidth(text)) / 2;

@@ -1,11 +1,11 @@
 package ui;
 
 import controller.ChatController;
-import model.ChatRequest;
-import javax.swing.*;
 import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
+import javax.swing.*;
+import model.ChatRequest;
 
 /**
  * SellerPanel - Redesigned as multi-session dashboard
@@ -36,9 +36,10 @@ public class SellerPanel extends JPanel {
         headerPanel.setBackground(Color.WHITE);
         headerPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
 
-        JLabel headerLabel = new JLabel(" Seller Dashboard");
-        headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        headerLabel.setForeground(new Color(0, 150, 136)); // Teal/Green color
+        // MENGGUNAKAN EMOJI SELLER (OFFICE WORKER)
+        JLabel headerLabel = new JLabel("\uD83D\uDC68\u200D\uD83D\uDCBC Seller Dashboard"); 
+        headerLabel.setFont(new Font("Segoe UI Emoji", Font.BOLD, 18)); // Font khusus emoji
+        headerLabel.setForeground(new Color(33, 150, 243)); // Warna biru cerah untuk Seller
         headerPanel.add(headerLabel);
 
         add(headerPanel, BorderLayout.NORTH);

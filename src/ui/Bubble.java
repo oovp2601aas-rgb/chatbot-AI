@@ -1,15 +1,9 @@
 package ui;
 
+import java.awt.*;
 import javax.swing.*;
 import javax.swing.border.AbstractBorder;
-import java.awt.*;
-import java.awt.geom.Area;
-import java.awt.geom.RoundRectangle2D;
 
-/**
- * Bubble - UI component for displaying chat messages
- * Modernized with rounded corners, padding, and proper alignment.
- */
 public class Bubble extends JPanel {
 
     public enum BubbleType {
@@ -21,18 +15,143 @@ public class Bubble extends JPanel {
     private String message;
     private BubbleType type;
 
-    // Colors
-    private static final Color COLOR_BUYER = new Color(227, 242, 253); // Light Blue
-    private static final Color COLOR_WAITING = new Color(255, 253, 231); // Light Yellow
-    private static final Color COLOR_SELLER = new Color(232, 245, 233); // Light Green
-    private static final Color COLOR_BORDER = new Color(230, 230, 230); // Subtle border
-
     private int requestId = -1;
     private int formIndex = -1;
 
-    public String getText() {
-        return message;
+    private controller.ChatController controller; // new
+
+    private static final Color COLOR_BUYER = new Color(227, 242, 253);
+    private static final Color COLOR_WAITING = new Color(255, 253, 231);
+    private static final Color COLOR_SELLER = new Color(232, 245, 233);
+    private static final Color COLOR_BORDER = new Color(230, 230, 230);
+
+    public Bubble(String message, BubbleType type) {
+        this.message = message;
+        this.type = type;
+        initComponents();
     }
+
+    // new
+    public void setController(controller.ChatController controller){
+        this.controller = controller;
+    }
+
+    private void initComponents() {
+        setOpaque(false);
+
+        if (type == BubbleType.BUYER) {
+            setLayout(new FlowLayout(FlowLayout.RIGHT, 15, 5));
+        } else {
+            setLayout(new FlowLayout(FlowLayout.LEFT, 15, 5));
+        }
+
+        JPanel bubbleContent = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Color bgColor;
+
+                switch (type) {
+                    case BUYER:
+                        bgColor = COLOR_BUYER;
+                        break;
+                    case WAITING:
+                        bgColor = COLOR_WAITING;
+                        break;
+                    default:
+                        bgColor = COLOR_SELLER;
+                        break;
+                }
+
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON);
+
+                g2.setColor(bgColor);
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20);
+
+                g2.setColor(COLOR_BORDER);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20);
+
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+
+        bubbleContent.setOpaque(false);
+        bubbleContent.setLayout(new BorderLayout());
+        bubbleContent.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+
+        String htmlMessage = "<html><body style='width: 350px;'>"
+                + message.replace("\n", "<br>")
+                + "</body></html>";
+
+        JLabel messageLabel = new JLabel(htmlMessage);
+        messageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        messageLabel.setForeground(Color.BLACK);
+
+        bubbleContent.add(messageLabel, BorderLayout.CENTER);
+
+        // SELLER BUTTON
+        if (type == BubbleType.SELLER) {
+
+            JButton pilihButton = new JButton("Choose");
+            pilihButton.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            pilihButton.setForeground(new Color(0, 150, 136));
+            pilihButton.setBackground(Color.WHITE);
+            pilihButton.setFocusPainted(false);
+            pilihButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+            pilihButton.setBorder(BorderFactory.createCompoundBorder(
+                    new RoundedBorder(new Color(0, 150, 136), 15),
+                    BorderFactory.createEmptyBorder(5, 15, 5, 15)
+            ));
+
+            final boolean[] selected = {false};
+
+            pilihButton.addActionListener(e -> {
+                if (!selected[0]) {
+
+                    // Background putih
+                    pilihButton.setBackground(Color.WHITE);
+                    pilihButton.setOpaque(true);
+                    pilihButton.setContentAreaFilled(true);
+
+                    // Text hijau tua
+                    Color darkGreen = new Color(27, 94, 32);
+                    pilihButton.setForeground(darkGreen);
+                    // Menggunakan emoji Centang Hijau (White Heavy Check Mark)
+                    pilihButton.setText("\u2705 Chosen");
+                    pilihButton.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14)); // Agar emoji tidak kotak
+
+                    // Border hijau tua tebal
+                    pilihButton.setBorder(BorderFactory.createCompoundBorder(
+                            new RoundedBorder(darkGreen, 15),
+                            BorderFactory.createEmptyBorder(6, 18, 6, 18)
+                    ));
+
+                    selected[0] = true;
+
+                    // new
+                    if (controller != null){
+                        controller.onBuyerChoose(requestId, formIndex, message);
+                    }
+                }
+            });
+
+
+            JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 5));
+            bottomPanel.setOpaque(false);
+            bottomPanel.add(pilihButton);
+
+            bubbleContent.add(bottomPanel, BorderLayout.SOUTH);
+        }
+
+        add(bubbleContent);
+    }
+
+    // =========================
+    // GETTER & SETTER (PENTING)
+    // =========================
 
     public void setRequestId(int requestId) {
         this.requestId = requestId;
@@ -50,97 +169,19 @@ public class Bubble extends JPanel {
         return formIndex;
     }
 
+    public String getText() {
+        return message;
+    }
+
     public BubbleType getType() {
         return type;
     }
 
-    public Bubble(String message, BubbleType type) {
-        this.message = message;
-        this.type = type;
-        initComponents();
-    }
-
-    private void initComponents() {
-        // 1. Wrapper Layout (This Panel)
-        // Uses FlowLayout to align LEFT or RIGHT
-        setOpaque(false);
-        if (type == BubbleType.BUYER) {
-            setLayout(new FlowLayout(FlowLayout.RIGHT, 15, 5));
-        } else {
-            setLayout(new FlowLayout(FlowLayout.LEFT, 15, 5));
-        }
-
-        // 2. Inner Bubble Panel
-        // Holds the text and paints the rounded background
-        JPanel bubbleContent = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                // Determine color
-                Color bgColor;
-                switch (type) {
-                    case BUYER:
-                        bgColor = COLOR_BUYER;
-                        break;
-                    case WAITING:
-                        bgColor = COLOR_WAITING;
-                        break;
-                    default:
-                        bgColor = COLOR_SELLER;
-                        break;
-                }
-
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(bgColor);
-                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20); // 20px radius
-                g2.setColor(COLOR_BORDER);
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-        bubbleContent.setOpaque(false); // We paint background manually
-        bubbleContent.setLayout(new BorderLayout());
-        // Padding inside the bubble: EmptyBorder(10, 15, 10, 15)
-        bubbleContent.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
-
-        // 3. Message Label
-        // Uses HTML for wrapping. Max width approx 400px (controlled by HTML body
-        // width)
-        // Use styled paragraph to ensure proper wrapping
-        String htmlMessage = "<html><body style='width: 350px; text-align: left;'>"
-                + message.replace("\n", "<br>")
-                + "</body></html>";
-
-        JLabel messageLabel = new JLabel(htmlMessage);
-        messageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        messageLabel.setForeground(Color.BLACK);
-
-        // If message is short, let JLabel auto-size (don't force 350px if not needed)
-        // The HTML 'width' usually forces preferred size.
-        // A trick for dynamic width: use basic HTML, but override preferred size?
-        // Actually, 'width' in body forces it.
-        // Let's check text length.
-        if (message.length() < 50 && !message.contains("\n")) {
-            // Short message: remove fixed width to let it shrink
-            htmlMessage = "<html><body style='text-align: left;'>"
-                    + message
-                    + "</body></html>";
-            messageLabel.setText(htmlMessage);
-        }
-
-        bubbleContent.add(messageLabel, BorderLayout.CENTER);
-
-        add(bubbleContent);
-    }
-
-    /**
-     * Custom RoundedBorder (Requested Implementation)
-     * Note: I used paintComponent in JPanel above for better background filling,
-     * but here is the class as requested if we wanted to use it strictly as a
-     * Border.
-     */
+    // =========================
+    // ROUNDED BORDER
+    // =========================
     public static class RoundedBorder extends AbstractBorder {
+
         private Color color;
         private int radius;
 
@@ -150,16 +191,21 @@ public class Bubble extends JPanel {
         }
 
         @Override
-        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
-            Graphics2D g2 = (Graphics2D) g;
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        public void paintBorder(Component c, Graphics g,
+                                int x, int y, int width, int height) {
+
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON);
+
             g2.setColor(color);
             g2.drawRoundRect(x, y, width - 1, height - 1, radius, radius);
+            g2.dispose();
         }
 
         @Override
         public Insets getBorderInsets(Component c) {
-            return new Insets(radius / 2, radius / 2, radius / 2, radius / 2);
+            return new Insets(8, 8, 8, 8);
         }
     }
 

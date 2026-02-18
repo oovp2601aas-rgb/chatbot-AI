@@ -1,13 +1,14 @@
 package controller;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.swing.Timer;
 import model.ChatRequest;
 import service.SellerAIService;
 import ui.BuyerPanel;
 import ui.SellerPanel;
-
-import javax.swing.Timer;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * ChatController - Mediator Pattern Implementation
@@ -28,6 +29,11 @@ public class ChatController {
     private SellerPanel sellerPanel;
     private List<ChatRequest> activeRequests;
     private int requestIdCounter;
+    // // new
+    // private List<String> chosenItems = new ArrayList<>();
+
+    //simpan item + quantity
+    private Map<String, Integer> chosenItems = new HashMap<>();
 
     // AI Service
     private SellerAIService aiService;
@@ -47,6 +53,61 @@ public class ChatController {
         this.sellerPanel = sellerPanel;
         sellerPanel.setController(this);
     }
+
+    /**
+     * new
+     * Called when buyer clicks Choose button
+     */
+public void onBuyerChoose(int requestId, int formIndex, String message) {
+
+    // Default quantity = 1
+    int quantity = 1;
+
+    // Coba extract angka dari message (kalau ada)
+    try {
+        String[] words = message.split(" ");
+        for (String word : words) {
+            if (word.matches("\\d+")) {
+                quantity = Integer.parseInt(word);
+                break;
+            }
+        }
+    } catch (Exception e) {
+        quantity = 1;
+    }
+
+    // Jika item sudah ada → tambah quantity
+    if (chosenItems.containsKey(message)) {
+        int currentQty = chosenItems.get(message);
+        chosenItems.put(message, currentQty + quantity);
+    } else {
+        chosenItems.put(message, quantity);
+    }
+
+    // ======= BUAT RINGKASAN =======
+    StringBuilder summary = new StringBuilder();
+    summary.append("🧾 Ringkasan Pesanan Buyer\n");
+    summary.append("----------------------------------\n\n");
+
+    for (Map.Entry<String, Integer> entry : chosenItems.entrySet()) {
+        summary.append("• ")
+               .append(entry.getKey())
+               .append("  x ")
+               .append(entry.getValue())
+               .append("\n\n");
+    }
+
+    summary.append("----------------------------------\n");
+    summary.append("Silakan konfirmasi pesanan Anda 😊");
+
+    if (buyerPanel != null) {
+        buyerPanel.displayBuyerSummary(summary.toString());
+    }
+
+    System.out.println("[ChatController] Buyer chose item with quantity from REQ-" 
+            + requestId);
+}
+
 
     /**
      * Called when buyer sends a message
@@ -171,13 +232,13 @@ public class ChatController {
         String prefix = "";
         switch (formIndex) {
             case 1:
-                prefix = "📦 Product: ";
+                prefix = "Product: ";
                 break;
             case 2:
-                prefix = "💰 Price: ";
+                prefix = "Price: ";
                 break;
             case 3:
-                prefix = "📊 Stock: ";
+                prefix = "Stock: ";
                 break;
         }
         return prefix + value;
@@ -218,4 +279,5 @@ public class ChatController {
 
         System.out.println("[ChatController] All chats cleared");
     }
+    
 }

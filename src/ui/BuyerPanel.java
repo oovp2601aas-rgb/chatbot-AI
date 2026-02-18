@@ -1,8 +1,8 @@
 package ui;
 
 import controller.ChatController;
-import javax.swing.*;
 import java.awt.*;
+import javax.swing.*;
 
 /**
  * BuyerPanel - Redesigned UI for buyer chat
@@ -32,12 +32,14 @@ public class BuyerPanel extends JPanel {
         headerPanel.setBackground(Color.WHITE);
         headerPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230))); // Bottom border
 
-        JLabel headerLabel = new JLabel(" Buyer Chat"); // Mobile-like icon
-        headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        // MENGGUNAKAN EMOJI BUYER (SHOPPING BAGS)
+        JLabel headerLabel = new JLabel("\uD83D\uDECD Buyer Chat"); 
+        headerLabel.setFont(new Font("Segoe UI Emoji", Font.BOLD, 18)); // Menggunakan font emoji agar tampil sempurna
         headerLabel.setForeground(new Color(103, 58, 183)); // Deep purple/blue
         headerPanel.add(headerLabel);
 
         add(headerPanel, BorderLayout.NORTH);
+
 
         // Chat display area
         chatArea = new JPanel();
@@ -104,9 +106,6 @@ public class BuyerPanel extends JPanel {
     /**
      * Display a waiting status message (yellow bubble)
      */
-    /**
-     * Display a waiting status message (yellow bubble)
-     */
     public void displayWaitingMessage(String requestLabel, int requestId, int formIndex) {
         String message = "⏳ Waiting for seller data " + requestLabel.substring(requestLabel.lastIndexOf('-') + 1)
                 + "...";
@@ -120,6 +119,7 @@ public class BuyerPanel extends JPanel {
     }
 
     /**
+     * new
      * Display a seller response (green bubble)
      */
     public void displaySellerResponse(String message) {
@@ -140,6 +140,95 @@ public class BuyerPanel extends JPanel {
             showQuickOptions(new String[] { "Confirm Order", "Modify Order", "Cancel" });
         }
     }
+
+    /**
+     * Display buyer summary (centered with button below)
+     */
+    public void displayBuyerSummary(String message) {
+
+        // Hapus ringkasan lama supaya tidak numpuk
+        for (int i = chatArea.getComponentCount() - 1; i >= 0; i--) {
+            Component comp = chatArea.getComponent(i);
+            if (comp instanceof JPanel) {
+                JPanel panel = (JPanel) comp;
+                if (panel.getName() != null && panel.getName().equals("SUMMARY_PANEL")) {
+                    chatArea.remove(i);
+                }
+            }
+        }
+
+        // Panel utama summary (center)
+        JPanel summaryPanel = new JPanel();
+        summaryPanel.setName("SUMMARY_PANEL");
+        summaryPanel.setLayout(new BoxLayout(summaryPanel, BoxLayout.Y_AXIS));
+        summaryPanel.setOpaque(false);
+        summaryPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Bubble text
+        JTextArea summaryArea = new JTextArea(message);
+        summaryArea.setWrapStyleWord(true);
+        summaryArea.setLineWrap(true);
+        summaryArea.setEditable(false);
+        summaryArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        summaryArea.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
+
+        // 🌸 Lavender Blue
+        summaryArea.setBackground(new Color(197, 202, 233));
+        summaryArea.setForeground(new Color(40, 53, 147));
+
+        summaryArea.setMaximumSize(new Dimension(400, Integer.MAX_VALUE));
+        summaryArea.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Tombol bawah tengah
+        JButton confirmButton = new JButton("Confirm Purchase");
+        confirmButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        confirmButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        confirmButton.setForeground(Color.WHITE);
+
+        //LAVENDER blue yang solid
+        Color lavenderBlue = new Color(121, 134, 203);
+
+        confirmButton.setBackground(lavenderBlue);
+        confirmButton.setOpaque(true);
+        confirmButton.setContentAreaFilled(true);
+        confirmButton.setBorderPainted(false);
+        confirmButton.setFocusPainted(false);
+        confirmButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        //padding biar elegan
+        confirmButton.setBorder(BorderFactory.createEmptyBorder(10, 30, 10, 30));
+
+        // styling
+        confirmButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                confirmButton.setBackground(new Color(94, 108, 194));
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                confirmButton.setBackground(lavenderBlue);
+            }
+        });
+
+        
+        // Optional action
+        confirmButton.addActionListener(e -> {
+            JOptionPane.showMessageDialog(this,
+                    "Purchase Confirmed!",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+        });
+
+        summaryPanel.add(summaryArea);
+        summaryPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        summaryPanel.add(confirmButton);
+
+        chatArea.add(summaryPanel);
+        chatArea.revalidate();
+        chatArea.repaint();
+        scrollToBottom();
+    }
+
 
     /**
      * Remove the last waiting message and replace with seller response
@@ -177,6 +266,8 @@ public class BuyerPanel extends JPanel {
 
                     chatArea.remove(i);
                     Bubble responseBubble = new Bubble(response, Bubble.BubbleType.SELLER);
+                    // new
+                    responseBubble.setController(controller);
                     // Keep the ID and Index for future revisions
                     responseBubble.setRequestId(requestId);
                     responseBubble.setFormIndex(formIndex);

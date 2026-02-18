@@ -1,9 +1,9 @@
 package ui;
 
 import controller.ChatController;
-import model.ChatRequest;
-import javax.swing.*;
 import java.awt.*;
+import javax.swing.*;
+import model.ChatRequest;
 
 /**
  * RequestPanel - Individual request section for seller dashboard
@@ -137,7 +137,7 @@ public class RequestPanel extends JPanel {
         buttonsPanel.setBackground(Color.WHITE);
 
         // AI Suggest button (Purple/Blue) - Smaller
-        CircularButton aiButton = new CircularButton("✨", new Color(103, 58, 183), 32);
+        CircularButton aiButton = new CircularButton("AI", new Color(103, 58, 183), 32);
         aiButton.setToolTipText("Get AI Suggestion");
         aiButton.addActionListener(e -> controller.onAISuggestRequested(request.getRequestId(), formIndex));
         buttonsPanel.add(aiButton);
