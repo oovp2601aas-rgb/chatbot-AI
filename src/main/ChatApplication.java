@@ -7,131 +7,120 @@ import ui.BuyerPanel;
 import ui.SellerPanel;
 
 /**
- * Main Application - Entry point for the multi-session chat application
- * 
- * ARCHITECTURE:
- * - MVC Pattern: Model (ChatRequest), View (BuyerPanel, SellerPanel),
- * Controller (ChatController)
- * - Mediator Pattern: ChatController mediates between buyer and seller panels
- * - Service Layer: SellerAIService provides AI functionality
- * 
- * NEW FEATURES:
- * - Multi-session support (REQ-1, REQ-2, REQ-3...)
- * - Color-coded message bubbles (blue, yellow, green)
- * - Circular send buttons
- * - AI suggestions per form field
+ * ChatApplication - Entry point
+ *
+ * PERUBAHAN BESAR:
+ * - Setiap panel (1 buyer + 3 seller) tampil sebagai JFrame TERPISAH
+ * - Total 4 jendela, berjejer otomatis di layar
+ * - Semua terhubung melalui 1 ChatController yang sama
  */
-public class ChatApplication extends JFrame {
+public class ChatApplication {
+
     private ChatController controller;
-    private BuyerPanel buyerPanel;
-    private SellerPanel sellerPanel;
+    private BuyerFrame     buyerFrame;
+    private SellerFrame[]  sellerFrames = new SellerFrame[3];
 
     public ChatApplication() {
-        initComponents();
-    }
-
-    private void initComponents() {
-        setTitle("Multi-Session Chat System");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        // Main container with background and padding
-        JPanel mainContainer = new JPanel(new GridLayout(1, 2, 20, 20));
-        mainContainer.setBackground(new Color(225, 235, 245)); // Light blue-gray background
-        mainContainer.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-
-        // Initialize controller (Mediator)
+        // 1 controller untuk semua
         controller = new ChatController();
 
-        // Initialize UI panels
-        buyerPanel = new BuyerPanel();
-        sellerPanel = new SellerPanel();
+        // Buat buyer frame
+        buyerFrame = new BuyerFrame(controller);
 
-        // Connect panels to controller
-        controller.setBuyerPanel(buyerPanel);
-        controller.setSellerPanel(sellerPanel);
-
-        // Add panels to main container
-        mainContainer.add(buyerPanel);
-        mainContainer.add(sellerPanel);
-
-        add(mainContainer);
-
-        // Menu bar
-        createMenuBar();
-
-        // Window settings
-        setSize(1100, 750);
-        setLocationRelativeTo(null);
+        // Buat 3 seller frame
+        for (int i = 0; i < 3; i++) {
+            sellerFrames[i] = new SellerFrame(controller, i);
+        }
     }
 
-    private void createMenuBar() {
-        JMenuBar menuBar = new JMenuBar();
+    /** Tampilkan semua jendela — posisi bebas, sedikit offset agar tidak tumpuk persis */
+    public void showAll() {
+        int frameW = 520;
+        int frameH = 700;
 
-        JMenu fileMenu = new JMenu("File");
+        // Buyer di posisi default tengah-kiri, tiap jendela offset 30px
+        buyerFrame.setSize(frameW, frameH);
+        buyerFrame.setLocationRelativeTo(null); // tengah layar
+        buyerFrame.setVisible(true);
 
-        JMenuItem clearItem = new JMenuItem("Clear All Chats");
-        clearItem.addActionListener(e -> controller.clearAllChats());
-
-        JMenuItem exitItem = new JMenuItem("Exit");
-        exitItem.addActionListener(e -> System.exit(0));
-
-        fileMenu.add(clearItem);
-        fileMenu.addSeparator();
-        fileMenu.add(exitItem);
-
-        JMenu helpMenu = new JMenu("Help");
-        JMenuItem aboutItem = new JMenuItem("About");
-        aboutItem.addActionListener(e -> showAboutDialog());
-        helpMenu.add(aboutItem);
-
-        menuBar.add(fileMenu);
-        menuBar.add(helpMenu);
-
-        setJMenuBar(menuBar);
+        // Seller 1, 2, 3 offset ke kanan-bawah dari buyer
+        Point base = buyerFrame.getLocation();
+        for (int i = 0; i < 3; i++) {
+            int offset = (i + 1) * 30;
+            sellerFrames[i].setSize(frameW, frameH);
+            sellerFrames[i].setLocation(base.x + offset, base.y + offset);
+            sellerFrames[i].setVisible(true);
+        }
     }
 
-    private void showAboutDialog() {
-        String message = "Multi-Session Chat System\n\n" +
-                "Features:\n" +
-                "• Multi-session buyer-seller communication\n" +
-                "• AI-powered seller assistant (per field)\n" +
-                "• Color-coded message bubbles\n" +
-                "• Individual form field submission\n\n" +
-                "Architecture:\n" +
-                "• MVC Pattern\n" +
-                "• Mediator Pattern (ChatController)\n" +
-                "• Service Layer (SellerAIService)\n\n" +
-                "How to use:\n" +
-                "1. Buyer sends messages\n" +
-                "2. Each message creates a new request (REQ-1, REQ-2...)\n" +
-                "3. AI auto-fills seller form fields\n" +
-                "4. Seller can edit and submit each field individually\n" +
-                "5. Green submit button per field\n\n" +
-                "Built with Java Swing";
+    // ══════════════════════════════════════════════════════════
+    //  BuyerFrame
+    // ══════════════════════════════════════════════════════════
+    static class BuyerFrame extends JFrame {
+        BuyerFrame(ChatController controller) {
+            setTitle("\uD83D\uDECD Buyer");
+            setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        JOptionPane.showMessageDialog(this, message, "About", JOptionPane.INFORMATION_MESSAGE);
+            BuyerPanel buyerPanel = new BuyerPanel();
+            controller.setBuyerPanel(buyerPanel);
+            add(buyerPanel);
+
+            // Menu bar
+            JMenuBar mb = new JMenuBar();
+            JMenu fm = new JMenu("File");
+            JMenuItem clearItem = new JMenuItem("Clear All Chats");
+            clearItem.addActionListener(e -> controller.clearAllChats());
+            JMenuItem exitItem = new JMenuItem("Exit");
+            exitItem.addActionListener(e -> System.exit(0));
+            fm.add(clearItem); fm.addSeparator(); fm.add(exitItem);
+            mb.add(fm);
+            setJMenuBar(mb);
+        }
     }
 
+    // ══════════════════════════════════════════════════════════
+    //  SellerFrame
+    // ══════════════════════════════════════════════════════════
+    static class SellerFrame extends JFrame {
+        SellerFrame(ChatController controller, int sellerIndex) {
+            setTitle("\uD83D\uDC68\u200D\uD83C\uDF73 Seller " + (sellerIndex + 1));
+            setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); // jangan exit semua kalau seller ditutup
+
+            SellerPanel sellerPanel = new SellerPanel(sellerIndex);
+            controller.addSellerPanel(sellerPanel);
+            add(sellerPanel);
+
+            // Menu bar per seller
+            JMenuBar mb = new JMenuBar();
+            JMenu fm = new JMenu("File");
+            JMenuItem clearItem = new JMenuItem("Clear My Requests");
+            clearItem.addActionListener(e -> sellerPanel.clearAllRequests());
+            fm.add(clearItem);
+            mb.add(fm);
+            setJMenuBar(mb);
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    //  Main
+    // ══════════════════════════════════════════════════════════
     public static void main(String[] args) {
-        // Set look and feel
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        // Create and show application
         SwingUtilities.invokeLater(() -> {
             ChatApplication app = new ChatApplication();
-            app.setVisible(true);
+            app.showAll();
 
             System.out.println("==============================================");
-            System.out.println("Multi-Session Chat System Started");
+            System.out.println("Food Chat System - Multi Window");
+            System.out.println("  Buyer Frame    : 1");
+            System.out.println("  Seller Frames  : 3");
+            System.out.println("  Controller     : 1 shared ChatController");
             System.out.println("==============================================");
-            System.out.println("AI Service: SellerAIService (Mock Rule-Based)");
-            System.out.println("Architecture: MVC + Mediator Pattern");
-            System.out.println("Features: Multi-session, AI per field");
-            System.out.println("==============================================\n");
         });
     }
 }

@@ -8,43 +8,65 @@ import javax.swing.*;
 import model.ChatRequest;
 
 /**
- * SellerPanel - Redesigned as multi-session dashboard
- * Matches the right panel design from the target image
- * 
- * Features:
- * - "💼 Seller Dashboard" header
- * - Scrollable list of request panels (REQ-1, REQ-2, REQ-3...)
- * - Each request has 3 forms with individual green submit buttons
- * - AI suggestions per field
+ * SellerPanel - Dashboard untuk 1 seller
+ *
+ * PERUBAHAN:
+ * - Punya sellerIndex (0, 1, 2) dan sellerName ("Seller 1", dst)
+ * - Header menampilkan nama seller
+ * - sellerIndex diteruskan ke RequestPanel agar form submit tahu seller mana
  */
 public class SellerPanel extends JPanel {
-    private ChatController controller;
-    private JPanel requestsContainer;
-    private Map<Integer, RequestPanel> requestPanels; // requestId -> RequestPanel
 
-    public SellerPanel() {
-        this.requestPanels = new HashMap<>();
+    private ChatController controller;
+    private JPanel         requestsContainer;
+    private Map<Integer, RequestPanel> requestPanels = new HashMap<>();
+
+    private int    sellerIndex; // 0, 1, 2
+    private String sellerName;  // "Seller 1", "Seller 2", "Seller 3"
+
+    // Warna header per seller
+    private static final Color[] SELLER_COLORS = {
+        new Color(33, 150, 243),   // Seller 1 - Biru
+        new Color(0,  150, 136),   // Seller 2 - Teal
+        new Color(233, 30, 99)     // Seller 3 - Pink
+    };
+
+    private static final String[] SELLER_ICONS = {
+        "\uD83D\uDC68\u200D\uD83C\uDF73",   // 👨‍🍳 Seller 1
+        "\uD83D\uDC69\u200D\uD83C\uDF73",   // 👩‍🍳 Seller 2
+        "\uD83E\uDDD1\u200D\uD83C\uDF73"    // 🧑‍🍳 Seller 3
+    };
+
+    public SellerPanel(int sellerIndex) {
+        this.sellerIndex = sellerIndex;
+        this.sellerName  = "Seller " + (sellerIndex + 1);
         initComponents();
+    }
+
+    /** Constructor default (backward compat) */
+    public SellerPanel() {
+        this(0);
     }
 
     private void initComponents() {
         setLayout(new BorderLayout(0, 0));
         setBackground(Color.WHITE);
 
-        // Header panel
+        // ── Header ──
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         headerPanel.setBackground(Color.WHITE);
         headerPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
 
-        // MENGGUNAKAN EMOJI SELLER (OFFICE WORKER)
-        JLabel headerLabel = new JLabel("\uD83D\uDC68\u200D\uD83D\uDCBC Seller Dashboard"); 
-        headerLabel.setFont(new Font("Segoe UI Emoji", Font.BOLD, 18)); // Font khusus emoji
-        headerLabel.setForeground(new Color(33, 150, 243)); // Warna biru cerah untuk Seller
-        headerPanel.add(headerLabel);
+        String icon  = sellerIndex < SELLER_ICONS.length  ? SELLER_ICONS[sellerIndex]  : "\uD83D\uDC68\u200D\uD83DDCBC";
+        Color  color = sellerIndex < SELLER_COLORS.length ? SELLER_COLORS[sellerIndex] : new Color(33, 150, 243);
 
+        JLabel headerLabel = new JLabel(icon + " " + sellerName + " Dashboard");
+        headerLabel.setFont(new Font("Segoe UI Emoji", Font.BOLD, 18));
+        headerLabel.setForeground(color);
+        headerPanel.add(headerLabel);
         add(headerPanel, BorderLayout.NORTH);
 
-        // Requests container (scrollable)
+        // ── Requests container ──
         requestsContainer = new JPanel();
         requestsContainer.setLayout(new BoxLayout(requestsContainer, BoxLayout.Y_AXIS));
         requestsContainer.setBackground(Color.WHITE);
@@ -58,54 +80,37 @@ public class SellerPanel extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    public void setController(ChatController controller) {
-        this.controller = controller;
+    public void setController(ChatController c) {
+        this.controller = c;
     }
 
-    /**
-     * Add a new request to the dashboard
-     */
-    public void addRequest(ChatRequest request) {
-        RequestPanel requestPanel = new RequestPanel(request, controller);
-        requestPanels.put(request.getRequestId(), requestPanel);
+    public String getSellerName()  { return sellerName; }
+    public int    getSellerIndex() { return sellerIndex; }
 
-        requestsContainer.add(requestPanel);
+    public void addRequest(ChatRequest request) {
+        // Teruskan sellerIndex ke RequestPanel
+        RequestPanel rp = new RequestPanel(request, controller, sellerIndex);
+        requestPanels.put(request.getRequestId(), rp);
+        requestsContainer.add(rp);
         requestsContainer.revalidate();
         requestsContainer.repaint();
-
         scrollToBottom();
     }
 
-    /**
-     * Update an existing request panel
-     */
-    public void updateRequest(ChatRequest request) {
-        RequestPanel panel = requestPanels.get(request.getRequestId());
-        if (panel != null) {
-            panel.updateRequest(request);
-        }
+    public void updateRequest(ChatRequest r) {
+        RequestPanel p = requestPanels.get(r.getRequestId());
+        if (p != null) p.updateRequest(r);
     }
 
-    /**
-     * Fill a specific form field with AI suggestion
-     */
     public void fillFormField(int requestId, int formIndex, String value) {
-        RequestPanel panel = requestPanels.get(requestId);
-        if (panel != null) {
-            panel.fillForm(formIndex, value);
-        }
+        RequestPanel p = requestPanels.get(requestId);
+        if (p != null) p.fillForm(formIndex, value);
     }
 
-    /**
-     * Get a request panel by ID
-     */
-    public RequestPanel getRequestPanel(int requestId) {
-        return requestPanels.get(requestId);
+    public RequestPanel getRequestPanel(int id) {
+        return requestPanels.get(id);
     }
 
-    /**
-     * Clear all requests from dashboard
-     */
     public void clearAllRequests() {
         requestsContainer.removeAll();
         requestPanels.clear();
@@ -115,8 +120,8 @@ public class SellerPanel extends JPanel {
 
     private void scrollToBottom() {
         SwingUtilities.invokeLater(() -> {
-            JScrollBar vertical = ((JScrollPane) requestsContainer.getParent().getParent()).getVerticalScrollBar();
-            vertical.setValue(vertical.getMaximum());
+            JScrollBar sb = ((JScrollPane) requestsContainer.getParent().getParent()).getVerticalScrollBar();
+            sb.setValue(sb.getMaximum());
         });
     }
 }
