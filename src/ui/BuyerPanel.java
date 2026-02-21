@@ -5,18 +5,17 @@ import java.awt.*;
 import javax.swing.*;
 
 /**
- * BuyerPanel - Redesigned UI for buyer chat
- * Matches the left panel design from the target image
- * 
- * Features:
- * - "📱 Buyer Chat" header
- * - Color-coded message bubbles (blue, yellow, green)
- * - Circular blue send button at bottom
+ * BuyerPanel - Buyer Chat (left panel)
+ *
+ * PERUBAHAN:
+ * - replaceSpecificWaitingBubble selalu meng-set controller pada seller bubble
+ *   agar tombol [ - ] qty [ + ] dan [ Choose ] bisa berkomunikasi ke controller
  */
 public class BuyerPanel extends JPanel {
-    private JTextField messageField;
+    private JTextField     messageField;
+    private JTextField     addressField;   // ← alamat pengiriman buyer
     private CircularButton sendButton;
-    private JPanel chatArea;
+    private JPanel         chatArea;
     private ChatController controller;
 
     public BuyerPanel() {
@@ -27,21 +26,17 @@ public class BuyerPanel extends JPanel {
         setLayout(new BorderLayout(0, 0));
         setBackground(Color.WHITE);
 
-        // Header panel
+        // ── Header ──
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         headerPanel.setBackground(Color.WHITE);
-        headerPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230))); // Bottom border
-
-        // MENGGUNAKAN EMOJI BUYER (SHOPPING BAGS)
-        JLabel headerLabel = new JLabel("\uD83D\uDECD Buyer Chat"); 
-        headerLabel.setFont(new Font("Segoe UI Emoji", Font.BOLD, 18)); // Menggunakan font emoji agar tampil sempurna
-        headerLabel.setForeground(new Color(103, 58, 183)); // Deep purple/blue
+        headerPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
+        JLabel headerLabel = new JLabel("\uD83D\uDECD Buyer Chat");
+        headerLabel.setFont(new Font("Segoe UI Emoji", Font.BOLD, 18));
+        headerLabel.setForeground(new Color(103, 58, 183));
         headerPanel.add(headerLabel);
-
         add(headerPanel, BorderLayout.NORTH);
 
-
-        // Chat display area
+        // ── Chat area ──
         chatArea = new JPanel();
         chatArea.setLayout(new BoxLayout(chatArea, BoxLayout.Y_AXIS));
         chatArea.setBackground(Color.WHITE);
@@ -54,12 +49,35 @@ public class BuyerPanel extends JPanel {
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         add(scrollPane, BorderLayout.CENTER);
 
-        // Input area
+        // ── Bottom area (address + message input) ──
+        JPanel bottomArea = new JPanel(new BorderLayout(0, 0));
+        bottomArea.setBackground(Color.WHITE);
+        bottomArea.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(230, 230, 230)));
+
+        // -- Address row --
+        JPanel addressPanel = new JPanel(new BorderLayout(8, 0));
+        addressPanel.setBackground(Color.WHITE);
+        addressPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 0, 20));
+
+        JLabel addressIcon = new JLabel("\uD83D\uDCCD Alamat:");
+        addressIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 13));
+        addressIcon.setForeground(new Color(103, 58, 183));
+        addressIcon.setPreferredSize(new Dimension(80, 32));
+
+        addressField = new JTextField();
+        addressField.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        addressField.setToolTipText("Masukkan alamat pengiriman...");
+        addressField.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(200, 180, 240), 1, true),
+                BorderFactory.createEmptyBorder(6, 12, 6, 12)));
+
+        addressPanel.add(addressIcon,   BorderLayout.WEST);
+        addressPanel.add(addressField,  BorderLayout.CENTER);
+
+        // -- Message row --
         JPanel inputPanel = new JPanel(new BorderLayout(15, 0));
         inputPanel.setBackground(Color.WHITE);
-        inputPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(230, 230, 230)),
-                BorderFactory.createEmptyBorder(15, 20, 15, 20)));
+        inputPanel.setBorder(BorderFactory.createEmptyBorder(8, 20, 15, 20));
 
         messageField = new JTextField();
         messageField.setFont(new Font("Segoe UI", Font.PLAIN, 15));
@@ -67,23 +85,23 @@ public class BuyerPanel extends JPanel {
                 BorderFactory.createLineBorder(new Color(220, 220, 220), 1, true),
                 BorderFactory.createEmptyBorder(10, 15, 10, 15)));
 
-        // Circular purple/blue send button
         sendButton = new CircularButton("➤", new Color(103, 58, 183), 45);
-
         inputPanel.add(messageField, BorderLayout.CENTER);
-        inputPanel.add(sendButton, BorderLayout.EAST);
+        inputPanel.add(sendButton,   BorderLayout.EAST);
 
-        add(inputPanel, BorderLayout.SOUTH);
+        bottomArea.add(addressPanel, BorderLayout.NORTH);
+        bottomArea.add(inputPanel,   BorderLayout.CENTER);
 
-        // Event listeners
+        add(bottomArea, BorderLayout.SOUTH);
+
         sendButton.addActionListener(e -> sendMessage());
         messageField.addActionListener(e -> sendMessage());
     }
 
     private void sendMessage() {
-        String message = messageField.getText().trim();
-        if (!message.isEmpty() && controller != null) {
-            controller.onBuyerMessageSent(message);
+        String msg = messageField.getText().trim();
+        if (!msg.isEmpty() && controller != null) {
+            controller.onBuyerMessageSent(msg);
             messageField.setText("");
         }
     }
@@ -92,230 +110,147 @@ public class BuyerPanel extends JPanel {
         this.controller = controller;
     }
 
-    /**
-     * Display a buyer message (blue bubble)
-     */
+    /** Ambil alamat yang diisi buyer, return string kosong jika belum diisi */
+    public String getAddress() {
+        String addr = addressField.getText().trim();
+        return addr.isEmpty() ? "" : addr;
+    }
+
+    // ──────────────────────────────────────────────────────────
+    //  Display methods
+    // ──────────────────────────────────────────────────────────
+
     public void displayBuyerMessage(String message) {
-        Bubble bubble = new Bubble(message, Bubble.BubbleType.BUYER);
-        chatArea.add(bubble);
-        chatArea.revalidate();
-        chatArea.repaint();
-        scrollToBottom();
+        Bubble b = new Bubble(message, Bubble.BubbleType.BUYER);
+        chatArea.add(b);
+        refresh();
     }
 
-    /**
-     * Display a waiting status message (yellow bubble)
-     */
     public void displayWaitingMessage(String requestLabel, int requestId, int formIndex) {
-        String message = "⏳ Waiting for seller data " + requestLabel.substring(requestLabel.lastIndexOf('-') + 1)
-                + "...";
-        Bubble bubble = new Bubble(message, Bubble.BubbleType.WAITING);
-        bubble.setRequestId(requestId);
-        bubble.setFormIndex(formIndex);
-        chatArea.add(bubble);
-        chatArea.revalidate();
-        chatArea.repaint();
-        scrollToBottom();
+        String msg = "⏳ Waiting for seller data "
+                + requestLabel.substring(requestLabel.lastIndexOf('-') + 1) + "...";
+        Bubble b = new Bubble(msg, Bubble.BubbleType.WAITING);
+        b.setRequestId(requestId);
+        b.setFormIndex(formIndex);
+        chatArea.add(b);
+        refresh();
+    }
+
+    public void displaySellerResponse(String message) {
+        Bubble b = new Bubble(message, Bubble.BubbleType.SELLER);
+        b.setController(controller);   // ← PENTING
+        chatArea.add(b);
+        refresh();
     }
 
     /**
-     * new
-     * Display a seller response (green bubble)
+     * Ganti waiting bubble dengan seller bubble yang sudah punya
+     * stepper [ - ] qty [ + ] dan tombol [ Choose ]
      */
-    public void displaySellerResponse(String message) {
-        Bubble bubble = new Bubble(message, Bubble.BubbleType.SELLER);
-        chatArea.add(bubble);
-        chatArea.revalidate();
-        chatArea.repaint();
-        scrollToBottom();
+    public void replaceSpecificWaitingBubble(int requestId, int formIndex, String response) {
+        for (int i = 0; i < chatArea.getComponentCount(); i++) {
+            Component comp = chatArea.getComponent(i);
+            if (!(comp instanceof Bubble)) continue;
 
-        // SIMULATED TRIGGERS FOR DEMONSTRATION
-        // In a real app, the Controller would call showQuickOptions based on logic.
-        // Here we trigger it based on message content to satisfy "Example usage inside
-        // chat flow".
-        String lowerMsg = message.toLowerCase();
-        if (lowerMsg.contains("menu") || lowerMsg.contains("order")) {
-            showQuickOptions(new String[] { "View Menu", "Order Food", "Order Drink", "Check Stock" });
-        } else if (lowerMsg.contains("confirm") || lowerMsg.contains("ready")) {
-            showQuickOptions(new String[] { "Confirm Order", "Modify Order", "Cancel" });
+            Bubble b = (Bubble) comp;
+            if (b.getRequestId() != requestId || b.getFormIndex() != formIndex) continue;
+
+            // Kalau sudah seller bubble dengan isi sama, skip (hindari flicker)
+            if (b.getText().equals(response) && b.getType() == Bubble.BubbleType.SELLER) return;
+
+            chatArea.remove(i);
+
+            Bubble seller = new Bubble(response, Bubble.BubbleType.SELLER);
+            seller.setController(controller);  // ← PENTING: stepper & Choose butuh controller
+            seller.setRequestId(requestId);
+            seller.setFormIndex(formIndex);
+
+            chatArea.add(seller, i);
+            refresh();
+            return;
         }
     }
 
     /**
-     * Display buyer summary (centered with button below)
+     * Tampilkan ringkasan pesanan (lavender bubble + tombol Confirm)
+     * Selalu replace panel SUMMARY_PANEL yang lama agar tidak numpuk.
      */
     public void displayBuyerSummary(String message) {
-
-        // Hapus ringkasan lama supaya tidak numpuk
+        // Hapus panel summary lama
         for (int i = chatArea.getComponentCount() - 1; i >= 0; i--) {
-            Component comp = chatArea.getComponent(i);
-            if (comp instanceof JPanel) {
-                JPanel panel = (JPanel) comp;
-                if (panel.getName() != null && panel.getName().equals("SUMMARY_PANEL")) {
-                    chatArea.remove(i);
-                }
+            Component c = chatArea.getComponent(i);
+            if (c instanceof JPanel && "SUMMARY_PANEL".equals(((JPanel) c).getName())) {
+                chatArea.remove(i);
             }
         }
 
-        // Panel utama summary (center)
         JPanel summaryPanel = new JPanel();
         summaryPanel.setName("SUMMARY_PANEL");
         summaryPanel.setLayout(new BoxLayout(summaryPanel, BoxLayout.Y_AXIS));
         summaryPanel.setOpaque(false);
         summaryPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Bubble text
-        JTextArea summaryArea = new JTextArea(message);
-        summaryArea.setWrapStyleWord(true);
-        summaryArea.setLineWrap(true);
-        summaryArea.setEditable(false);
-        summaryArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        summaryArea.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
+        JTextArea area = new JTextArea(message);
+        area.setWrapStyleWord(true);
+        area.setLineWrap(true);
+        area.setEditable(false);
+        area.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
+        area.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
+        area.setBackground(new Color(197, 202, 233));
+        area.setForeground(new Color(40, 53, 147));
+        area.setMaximumSize(new Dimension(400, Integer.MAX_VALUE));
+        area.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // 🌸 Lavender Blue
-        summaryArea.setBackground(new Color(197, 202, 233));
-        summaryArea.setForeground(new Color(40, 53, 147));
+        Color lavBlue = new Color(121, 134, 203);
+        JButton confirmBtn = new JButton("Confirm Purchase");
+        confirmBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        confirmBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        confirmBtn.setForeground(Color.WHITE);
+        confirmBtn.setBackground(lavBlue);
+        confirmBtn.setOpaque(true);
+        confirmBtn.setContentAreaFilled(true);
+        confirmBtn.setBorderPainted(false);
+        confirmBtn.setFocusPainted(false);
+        confirmBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        confirmBtn.setBorder(BorderFactory.createEmptyBorder(10, 30, 10, 30));
 
-        summaryArea.setMaximumSize(new Dimension(400, Integer.MAX_VALUE));
-        summaryArea.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        // Tombol bawah tengah
-        JButton confirmButton = new JButton("Confirm Purchase");
-        confirmButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        confirmButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        confirmButton.setForeground(Color.WHITE);
-
-        //LAVENDER blue yang solid
-        Color lavenderBlue = new Color(121, 134, 203);
-
-        confirmButton.setBackground(lavenderBlue);
-        confirmButton.setOpaque(true);
-        confirmButton.setContentAreaFilled(true);
-        confirmButton.setBorderPainted(false);
-        confirmButton.setFocusPainted(false);
-        confirmButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        //padding biar elegan
-        confirmButton.setBorder(BorderFactory.createEmptyBorder(10, 30, 10, 30));
-
-        // styling
-        confirmButton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                confirmButton.setBackground(new Color(94, 108, 194));
-            }
-
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                confirmButton.setBackground(lavenderBlue);
-            }
+        confirmBtn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) { confirmBtn.setBackground(new Color(94, 108, 194)); }
+            public void mouseExited (java.awt.event.MouseEvent e) { confirmBtn.setBackground(lavBlue); }
         });
+        confirmBtn.addActionListener(e ->
+                JOptionPane.showMessageDialog(this, "Purchase Confirmed!", "Success",
+                        JOptionPane.INFORMATION_MESSAGE));
 
-        
-        // Optional action
-        confirmButton.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this,
-                    "Purchase Confirmed!",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
-        });
-
-        summaryPanel.add(summaryArea);
+        summaryPanel.add(area);
         summaryPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        summaryPanel.add(confirmButton);
+        summaryPanel.add(confirmBtn);
 
         chatArea.add(summaryPanel);
-        chatArea.revalidate();
-        chatArea.repaint();
-        scrollToBottom();
+        refresh();
     }
 
-
-    /**
-     * Remove the last waiting message and replace with seller response
-     */
-    public void replaceLastWaitingWithResponse(String response) {
-        // Remove last component if it's a waiting bubble
-        if (chatArea.getComponentCount() > 0) {
-            Component lastComponent = chatArea.getComponent(chatArea.getComponentCount() - 1);
-            if (lastComponent instanceof Bubble) {
-                chatArea.remove(lastComponent);
-            }
-        }
-        // Deprecated or remove usage in controller
-        // displaySellerResponse(response);
-    }
-
-    /**
-     * Replace a specific waiting message (by index) with a seller response
-     */
-    /**
-     * Replace a specific waiting message (by index) with a seller response
-     */
-    public void replaceSpecificWaitingBubble(int requestId, int formIndex, String response) {
-        for (int i = 0; i < chatArea.getComponentCount(); i++) {
-            Component comp = chatArea.getComponent(i);
-            if (comp instanceof Bubble) {
-                Bubble bubble = (Bubble) comp;
-                // Match by Request ID and Form Index
-                if (bubble.getRequestId() == requestId && bubble.getFormIndex() == formIndex) {
-
-                    // If it's the same message, don't do anything (avoids flicker)
-                    if (bubble.getText().equals(response) && bubble.getType() == Bubble.BubbleType.SELLER) {
-                        return;
-                    }
-
-                    chatArea.remove(i);
-                    Bubble responseBubble = new Bubble(response, Bubble.BubbleType.SELLER);
-                    // new
-                    responseBubble.setController(controller);
-                    // Keep the ID and Index for future revisions
-                    responseBubble.setRequestId(requestId);
-                    responseBubble.setFormIndex(formIndex);
-
-                    chatArea.add(responseBubble, i);
-
-                    chatArea.revalidate();
-                    chatArea.repaint();
-                    return;
-                }
-            }
-        }
-    }
-
-    /**
-     * Display a panel of quick reply buttons
-     * 
-     * @param options Array of option strings
-     */
     public void showQuickOptions(String[] options) {
-        JPanel optionsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        optionsPanel.setOpaque(false);
-        optionsPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
-        for (String option : options) {
-            JButton btn = createStyledButton(option);
+        JPanel optPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        optPanel.setOpaque(false);
+        optPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        for (String opt : options) {
+            JButton btn = createStyledButton(opt);
             btn.addActionListener(e -> {
-                // Send the message
-                sendMessage(option);
-                // Remove the options panel after selection
-                chatArea.remove(optionsPanel);
-                chatArea.revalidate();
-                chatArea.repaint();
+                if (controller != null) controller.onBuyerMessageSent(opt);
+                chatArea.remove(optPanel);
+                refresh();
             });
-            optionsPanel.add(btn);
+            optPanel.add(btn);
         }
-
-        chatArea.add(optionsPanel);
-        chatArea.revalidate();
-        chatArea.repaint();
-        scrollToBottom();
+        chatArea.add(optPanel);
+        refresh();
     }
 
     private JButton createStyledButton(String text) {
         JButton btn = new JButton(text);
         btn.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         btn.setForeground(new Color(60, 60, 60));
-        btn.setBackground(new Color(240, 240, 240));
         btn.setFocusPainted(false);
         btn.setBorder(BorderFactory.createCompoundBorder(
                 new Bubble.RoundedBorder(new Color(200, 200, 200), 15),
@@ -323,46 +258,41 @@ public class BuyerPanel extends JPanel {
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         btn.setContentAreaFilled(false);
         btn.setOpaque(false);
-
-        // Add mouse listener for hover effect
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                btn.setBorder(BorderFactory.createCompoundBorder(
-                        new Bubble.RoundedBorder(new Color(103, 58, 183), 15), // Purple border on hover
-                        BorderFactory.createEmptyBorder(5, 12, 5, 12)));
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                btn.setBorder(BorderFactory.createCompoundBorder(new Bubble.RoundedBorder(new Color(103, 58, 183), 15), BorderFactory.createEmptyBorder(5, 12, 5, 12)));
                 btn.setForeground(new Color(103, 58, 183));
             }
-
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                btn.setBorder(BorderFactory.createCompoundBorder(
-                        new Bubble.RoundedBorder(new Color(200, 200, 200), 15),
-                        BorderFactory.createEmptyBorder(5, 12, 5, 12)));
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                btn.setBorder(BorderFactory.createCompoundBorder(new Bubble.RoundedBorder(new Color(200, 200, 200), 15), BorderFactory.createEmptyBorder(5, 12, 5, 12)));
                 btn.setForeground(new Color(60, 60, 60));
             }
         });
-
         return btn;
     }
 
-    /**
-     * Send a specific message (helper)
-     */
-    private void sendMessage(String message) {
-        if (!message.isEmpty() && controller != null) {
-            controller.onBuyerMessageSent(message);
-        }
+    // ──────────────────────────────────────────────────────────
+    //  Helpers
+    // ──────────────────────────────────────────────────────────
+    private void refresh() {
+        chatArea.revalidate();
+        chatArea.repaint();
+        scrollToBottom();
     }
 
     private void scrollToBottom() {
         SwingUtilities.invokeLater(() -> {
-            JScrollBar vertical = ((JScrollPane) chatArea.getParent().getParent()).getVerticalScrollBar();
-            vertical.setValue(vertical.getMaximum());
+            JScrollBar sb = ((JScrollPane) chatArea.getParent().getParent()).getVerticalScrollBar();
+            sb.setValue(sb.getMaximum());
         });
     }
 
     public void clearChat() {
         chatArea.removeAll();
-        chatArea.revalidate();
-        chatArea.repaint();
+        addressField.setText("");
+        refresh();
     }
+
+    /** deprecated – masih ada untuk kompatibilitas */
+    public void replaceLastWaitingWithResponse(String response) { }
 }
